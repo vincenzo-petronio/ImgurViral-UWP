@@ -1,0 +1,10 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:ImgurViralUWP.Converters">
+
+    <!-- CONVERTERS -->
+    <converters:Index0To1BasedConverter x:Key="IndexConv" />
+    <converters:BooleanToVisibilityConverter x:Key="BoolToVisConv" />
+
+</ResourceDictionary>
