@@ -1,15 +1,13 @@
-﻿using ImgurViralUWP.Models;
+﻿using ImgurViralUWP.Exceptions;
+using ImgurViralUWP.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using System.Linq;
-using Windows.Storage;
-using System.IO;
-using System.Diagnostics;
-using ImgurViralUWP.Exceptions;
 
 namespace ImgurViralUWP.Utils
 {
@@ -37,9 +35,9 @@ namespace ImgurViralUWP.Utils
                 GalleryImage responseDeserialized = JsonConvert.DeserializeObject<GalleryImage>(response);
                 // Filtro gli item che non sono visualizzabili, esempio video o album o GIF.
                 var responseDeserializedRestricted = from item in responseDeserialized.Data
-                                                        where item.IsAlbum == false
-                                                        && !item.Type.Contains("gif")
-                                                        select item;
+                                                     where !item.IsAlbum
+                                                     && !item.Type.Contains("gif")
+                                                     select item;
                 foreach (var d in responseDeserializedRestricted)
                 {
                     results.Add(d);
@@ -140,64 +138,64 @@ namespace ImgurViralUWP.Utils
 
             switch (httpResponseMessage.StatusCode)
             {
-                case System.Net.HttpStatusCode.OK :
-                {
-                    // 200
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 200 - OK");
-                    break;
-                }
+                case System.Net.HttpStatusCode.OK:
+                    {
+                        // 200
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 200 - OK");
+                        break;
+                    }
                 case System.Net.HttpStatusCode.BadRequest:
-                {
-                    // 400
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 400 - BadRequest");
-                    throw new ApiException(response);
-                }
-                case System.Net.HttpStatusCode.Unauthorized:
-                {
-                    // 401
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 401 - Unauthorized");
-                    throw new ApiException(response);
-                }
-                case System.Net.HttpStatusCode.Forbidden:
-                {
-                    // 403
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 403 - Forbidden");
-                    bool isNewToken = await RefreshAccessToken(authUser.RefreshToken);
-
-                    authUser = await AuthHelper.ReadAuthData();
-                    if (!isNewToken || null == authUser || String.IsNullOrEmpty(authUser.AccessToken) || String.IsNullOrEmpty(authUser.RefreshToken))
                     {
-                        throw new ArgumentNullException("NO_LOCAL_TOKEN");
-                    }
-
-                    try
-                    {
-                        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Authorization", "Bearer " + authUser.AccessToken);
-                        httpResponseMessage = await httpClient.GetAsync(new Uri(uri));
-                        response = await httpResponseMessage.Content.ReadAsStringAsync();
-                    }
-                    catch (ArgumentNullException)
-                    {
-                        throw new ArgumentNullException("BAD_GET_URI");
-                    }
-
-                    if (httpResponseMessage.IsSuccessStatusCode)
-                    {
-                        // OK
-                    }
-                    else
-                    {
+                        // 400
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 400 - BadRequest");
                         throw new ApiException(response);
                     }
+                case System.Net.HttpStatusCode.Unauthorized:
+                    {
+                        // 401
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 401 - Unauthorized");
+                        throw new ApiException(response);
+                    }
+                case System.Net.HttpStatusCode.Forbidden:
+                    {
+                        // 403
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 403 - Forbidden");
+                        bool isNewToken = await RefreshAccessToken(authUser.RefreshToken);
 
-                    break;
-                }
+                        authUser = await AuthHelper.ReadAuthData();
+                        if (!isNewToken || null == authUser || String.IsNullOrEmpty(authUser.AccessToken) || String.IsNullOrEmpty(authUser.RefreshToken))
+                        {
+                            throw new ArgumentNullException("NO_LOCAL_TOKEN");
+                        }
+
+                        try
+                        {
+                            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Authorization", "Bearer " + authUser.AccessToken);
+                            httpResponseMessage = await httpClient.GetAsync(new Uri(uri));
+                            response = await httpResponseMessage.Content.ReadAsStringAsync();
+                        }
+                        catch (ArgumentNullException)
+                        {
+                            throw new ArgumentNullException("BAD_GET_URI");
+                        }
+
+                        if (httpResponseMessage.IsSuccessStatusCode)
+                        {
+                            // OK
+                        }
+                        else
+                        {
+                            throw new ApiException(response);
+                        }
+
+                        break;
+                    }
                 case System.Net.HttpStatusCode.NotFound:
-                {
-                    // 404
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 404 - NotFound");
-                    throw new ApiException(response);
-                }
+                    {
+                        // 404
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 404 - NotFound");
+                        throw new ApiException(response);
+                    }
                 //case "429":
                 //{
                 //    // 429 Rate Limiting
@@ -205,13 +203,13 @@ namespace ImgurViralUWP.Utils
                 //    break;
                 //}
                 case System.Net.HttpStatusCode.InternalServerError:
-                {
-                    // 500
-                    Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 500 - InternalServerError");
-                    throw new ApiException(response);
-                }
+                    {
+                        // 500
+                        Debug.WriteLine("[DataService.DownloadData]\t" + "HttpStatusCode 500 - InternalServerError");
+                        throw new ApiException(response);
+                    }
             }
-            
+
             return response;
         }
 
